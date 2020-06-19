@@ -26,8 +26,10 @@ from os import chroot, fchdir, O_RDONLY, chdir, path, close
 from os import open as get
 from subprocess import check_call, CalledProcessError
 from sys import argv, stderr
+from getpass import getpass
 import json
 import urllib3
+import re
 import modules
 
 R = "\033[0;31m"
@@ -104,16 +106,75 @@ def check_internet():
         return False
     return False
 
+def has_special_character(input_string):
+    """Check for special characters"""
+    regex = re.compile(r'[@_!#$%^&*()<>?/\|}{~:]')
+    if regex.search(input_string) is None:
+        return False
+    else:
+        return True
+
+def hasspace(input_string):
+    """Check for spaces"""
+    for each3 in input_string:
+        if each3.isspace():
+            return True
+    return False
+
 def setup(config):
     """Perform setup process"""
     print("Setup process initited")
-    print("Supported devices:")
+    settings = {}
+    print(G + BOLD + "DEVICE SELECTION" + RESET)
+    print("------")
+    print(BOLD + "Supported devices:" + RESET)
     for each in config:
-        print(config[each][0] + ": ", end="")
+        print(BOLD + config[each][0] + ": " + RESET, end="")
         for each1 in config[each][1]:
-            print(each1, end=" ")
+            print(each1, end=", ")
         print("")
-
+    device = input("Which device is yours?: ").lower()
+    for each in config:
+        if device in config[each][1]:
+            settings["bootloader package"] = config[each][2]
+    print("")
+    print(G + BOLD + "USERNAME SETUP" + RESET)
+    print("------")
+    while True:
+        username = input("What do you want the username to be?: ").lower()
+        if has_special_character(username):
+            eprint(R + BOLD + "Special Characters Not Allowed" + RESET)
+        elif hasspace(username):
+            eprint(R + BOLD + "Spaces Not Allowed" + RESET)
+        else:
+            break
+    settings["USERNAME"] = username
+    print("")
+    print(G + BOLD + "PASSWORD SETUP" + RESET)
+    print(Y + BOLD + "PASSWORD HIDDEN FOR YOUR PROTECTION" + RESET)
+    print("------")
+    while True:
+        password = getpass("What do you want the password to be?: ")
+        password_conf = getpass("Repeat password: ")
+        if password != password_conf:
+            eprint(R + BOLD + "PASSWORDS DO NOT MATCH" + RESET)
+        else:
+            password_conf = ""
+            break
+    settings["PASSWORD"] = password
+    password = ""
+    print("")
+    print(G + BOLD + "COMPUTER NAME" + RESET)
+    print("------")
+    username = input("What do your computer to be named?: ").lower()
+        if has_special_character(username):
+            eprint(R + BOLD + "Special Characters Not Allowed" + RESET)
+        elif hasspace(username):
+            eprint(R + BOLD + "Spaces Not Allowed" + RESET)
+        else:
+            break
+    settings["COMPUTER_NAME"] = username
+    print("")
 
 def download_config():
     """Download JSON config"""

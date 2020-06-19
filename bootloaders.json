@@ -1,3 +1,27 @@
 {
-	"0":"Test entry"
+	"0":[
+			"RockChip devices",
+			["rock64", "rockpro64", "pinebook", "pinebook pro", "rock pi"],
+			"u-boot-rockchip"
+		],
+	"1":[
+			"Raspberry Pi Devices",
+			["raspberry pi 4", "raspberry pi 3B"],
+			"u-boot-rpi"
+		],
+	"2":[
+			"NVIDIA Tegra Devices",
+			[],
+			"u-boot-tegra"
+		],
+	"3":[
+			"Other, GRUB capable devices",
+			[],
+			"grub-efi-arm64"
+		],
+	"4":[
+			"Other, systemd-boot capable devices",
+			[],
+			"systemd-boot"
+		]
 }

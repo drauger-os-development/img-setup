@@ -99,24 +99,21 @@ def check_internet():
     try:
         urllib3.connection_from_url('https://draugeros.org', timeout=1)
         return True
-    except urllib3.exceptions.ConnectTimeoutError:
+    except:
         return False
-    except urllib3.exceptions.ConnectionError:
-        return False
-    except urllib3.exceptions.TimeoutError:
-        return False
-    except urllib3.exceptions.HTTPError:
-        return False
+    return False
 
 def setup(config):
 	"""Perform setup process"""
 	print("Setup process initited")
+	print(config)
 
 
 def download_config():
 	"""Download JSON config"""
 	print("Downloading Package Configuration . . .")
-	return json.load(urllib3.urlopen(""))
+	http = urllib3.PoolManager()
+	return json.loads(http.request("GET", "https://raw.githubusercontent.com/drauger-os-development/img-setup/master/bootloaders.json").data)
 	
 
 
@@ -131,8 +128,12 @@ if __name__ == '__main__':
 		    print(HELP)
     else:
         internet = check_internet()
-        if internet:
-            config = download_config()
+        if internet is True:
+            try:
+                config = download_config()
+            except:
+                eprint("Your internet is either slow or non-existant. Internet is necessary for setup. Please try again later.")
+                exit(2)
             setup(config)
         else:
             eprint("Your internet is either slow or non-existant. Internet is necessary for setup. Please try again later.")

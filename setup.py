@@ -2,24 +2,24 @@
 # -*- coding: utf-8 -*-
 #
 #  setup.py
-#  
+#
 #  Copyright 2020 Thomas Castleman <contact@draugeros.org>
-#  
+#
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
 #  the Free Software Foundation; either version 2 of the License, or
 #  (at your option) any later version.
-#  
+#
 #  This program is distributed in the hope that it will be useful,
 #  but WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #  GNU General Public License for more details.
-#  
+#
 #  You should have received a copy of the GNU General Public License
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #  MA 02110-1301, USA.
-#  
+#
 #
 """Setup IMG files for installation on a variety of ARM computers"""
 from os import chroot, fchdir, O_RDONLY, chdir, path, close
@@ -28,6 +28,7 @@ from subprocess import check_call, CalledProcessError
 from sys import argv, stderr
 import json
 import urllib3
+import modules
 
 R = "\033[0;31m"
 G = "\033[0;32m"
@@ -104,17 +105,22 @@ def check_internet():
     return False
 
 def setup(config):
-	"""Perform setup process"""
-	print("Setup process initited")
-	print(config)
+    """Perform setup process"""
+    print("Setup process initited")
+    print("Supported devices:")
+    for each in config:
+        print(config[each][0] + ": ", end="")
+        for each1 in config[each][1]:
+            print(each1, end=" ")
+        print("")
 
 
 def download_config():
-	"""Download JSON config"""
-	print("Downloading Package Configuration . . .")
-	http = urllib3.PoolManager()
-	return json.loads(http.request("GET", "https://raw.githubusercontent.com/drauger-os-development/img-setup/master/bootloaders.json").data)
-	
+    """Download JSON config"""
+    print("Downloading Package Configuration . . .")
+    http = urllib3.PoolManager()
+    return json.loads(http.request("GET", "https://raw.githubusercontent.com/drauger-os-development/img-setup/master/bootloaders.json").data)
+
 
 
 def eprint(*args, **kwargs):
@@ -124,8 +130,8 @@ def eprint(*args, **kwargs):
 
 if __name__ == '__main__':
     if len(argv) > 1:
-	    if argv[1] in ("-h", "--help"):
-		    print(HELP)
+        if argv[1] in ("-h", "--help"):
+            print(HELP)
     else:
         internet = check_internet()
         if internet is True:

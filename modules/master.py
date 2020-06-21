@@ -39,7 +39,6 @@ import warnings
 
 # import our own programs
 import modules.auto_login_set as auto_login_set
-import modules.make_swap as make_swap
 import modules.set_time as set_time
 import modules.systemd_boot_config as systemd_boot_config
 import modules.set_locale as set_locale
@@ -104,16 +103,6 @@ class MainInstallation():
         except PermissionError:
             chmod("/make_user.sh", 0o777)
             Popen(["/make_user.sh", USERNAME, PASSWORD])
-
-    def mk_swap(SWAP):
-        """Make swap file"""
-        if SWAP == "FILE":
-            try:
-                make_swap.make_swap()
-                with open("/etc/fstab", "a") as fstab:
-                    fstab.write("/.swapfile swap    swap    defaults    0   0")
-            except IOError:
-                eprint("Adding swap failed. Must manually add later")
 
     def __install_updates__(UPDATES, INTERNET):
         """Install updates"""

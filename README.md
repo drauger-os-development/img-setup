@@ -3,6 +3,8 @@ IMG file set up for ARM64-based computers
 
 This code is not used to MAKE IMG files. It is used to modify pre-existing IMG files to be useful on a larger variety of ARM computers. Making it so that essentially only one (1) IMG file needs to be distributed for many different ARM computers.
 
+**This program is a CLI application only. There is no GUI.**
+
 setup.py
 ---
 

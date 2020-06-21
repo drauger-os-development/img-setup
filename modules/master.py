@@ -48,7 +48,7 @@ def eprint(*args, **kwargs):
     print(*args, file=stderr, **kwargs)
 
 def __update__(percentage):
-    print("\r%s %" % (percentage))
+    print("\r %s %%" % (percentage), end="")
 
 class MainInstallation():
     """Main Installation Procedure, minus low-level stuff"""
@@ -115,7 +115,7 @@ class MainInstallation():
         elif not INTERNET:
             eprint("Cannot install updates. No internet.")
 
-    def apt(UPDATES, EXTRAS, INTERNET):
+    def apt(UPDATES, INTERNET):
         """Run commands for apt sequentially to avoid front-end lock"""
         MainInstallation.__install_updates__(UPDATES, INTERNET)
 

@@ -160,16 +160,6 @@ BACKSPACE=\"guess\"
         Popen(["udevadm", "trigger", "--subsystem-match=input",
                "--action=change"], stdout=stderr.buffer)
 
-    def remove_launcher(USERNAME):
-        """Remove system installer desktop launcher"""
-        try:
-            remove("/home/%s/Desktop/system-installer.desktop" % (USERNAME))
-        except FileNotFoundError:
-            try:
-                rmtree("/home/%sE/.config/xfce4/panel/launcher-3" % (USERNAME))
-            except FileNotFoundError:
-                eprint("Cannot find launcher for system-installer. User will need to remove manually.")
-
 def set_plymouth_theme():
     """Ensure the plymouth theme is set correctly"""
     Popen(["update-alternatives", "--install",

@@ -26,8 +26,7 @@
 				"Jetson TX1":false,
 				"Jetson AGX Xavier":false,
 				"Jetson Xavier":false,
-				"Jetson Xavier NX":false,
-				
+				"Jetson Xavier NX":false
 			},
 			"u-boot-tegra"
 		],

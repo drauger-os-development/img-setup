@@ -61,14 +61,14 @@ class MainInstallation():
                 args.append(settings[each])
             globals()[each1] = multiprocessing.Process(target=process_new, args=args)
             globals()[each1].start()
-        percent = 50 / len(processes_to_do)
-        growth = 50 / len(processes_to_do)
+        percent = 80 / len(processes_to_do)
+        growth = 80 / len(processes_to_do)
         while len(processes_to_do) > 0:
             for each in range(len(processes_to_do) - 1, -1, -1):
                 if not globals()[processes_to_do[each]].is_alive():
                     globals()[processes_to_do[each]].join()
                     del processes_to_do[each]
-                    __update(percent)
+                    __update__(percent)
                     percent = percent + growth
 
     def time_set(TIME_ZONE):

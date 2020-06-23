@@ -22,7 +22,7 @@
 #
 #
 """Setup IMG files for installation on a variety of ARM computers"""
-from os import chroot, fchdir, O_RDONLY, chdir, path, close, getuid, getcwd
+from os import chroot, fchdir, O_RDONLY, chdir, path, close, getuid, getcwd, listdir
 from os import open as get
 from shutil import move, copyfile
 from subprocess import check_call, CalledProcessError, check_output
@@ -295,14 +295,16 @@ def configuration_procedure(settings, location):
     __update__(2)
     __mount__(location)
     __update__(6)
+    location = getcwd() + "/modules"
+    file_list = listdir(location)
     for each in file_list:
         if ((each == "__pycache__") or (".py" in each)):
             continue
-        copyfile("/usr/share/system-installer/modules/" + each, "/mnt/" + each)
+        copyfile(location + "/" + each, "/mnt/" + each)
     __update__(7)
     move("/mnt/etc/resolv.conf", "/mnt/etc/resolv.conf.save")
     copyfile("/etc/resolv.conf", "/mnt/etc/resolv.conf")
-    __update(8)
+    __update__(8)
     try:
         if settings["LANG"] == "":
             print("\r")
@@ -363,7 +365,7 @@ def configuration_procedure(settings, location):
     chdir("/mnt")
     real_root = arch_chroot("/mnt")
     __update__(19)
-    modules.master.install(settings)
+    modules.master.install(settings, True)
     de_chroot(real_root, "/mnt")
     print(Y + BOLD + "CLEANING UP . . . " + RESET)
     for each in file_list:

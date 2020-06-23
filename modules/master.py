@@ -194,198 +194,39 @@ def _install_bootloader_package(package):
     check_call(["apt", "install", package])
 
 
-def install_bootloader(bootloader, root, release):
+def install_bootloader(bootloader):
     """Determine whether bootloader needs to be systemd-boot (for UEFI) or GRUB (for BIOS)
     and install the correct one.
     """
-    if bootloader == "systemd-boot":
-        _install_systemd_boot(release, root)
-    elif "grub" in bootloader:
+    if "grub" in bootloader:
         _install_bootloader_package(bootloader)
-        _install_grub(root)
+        _install_grub()
     elif bootloader in ("u-boot-rockchip", "u-boot-rpi", "u-boot-tegra"):
         _install_bootloader_package(bootloader)
 
 
-def _install_grub(root):
+def _install_grub():
     """set up and install GRUB.
     This function is only retained for BIOS systems.
     """
-    root = list(root)
-    for each1 in range(len(root) - 1, -1, -1):
-        try:
-            int(root[each1])
-            del root[each1]
-        except ValueError:
-            break
-    if root[-1] == "p":
-        del root[-1]
-    root = "".join(root)
     check_call(["grub-mkdevicemap", "--verbose"], stdout=stderr.buffer)
-    check_call(["grub-install", "--verbose", "--force", "--target=i386-pc",
-                root], stdout=stderr.buffer)
     check_call(["grub-mkconfig", "-o", "/boot/grub/grub.cfg"],
                stdout=stderr.buffer)
-
-def _install_systemd_boot(release, root):
-    """set up and install systemd-boot"""
-    try:
-        mkdir("/boot/efi")
-    except FileExistsError:
-        pass
-    mkdir("/boot/efi/loader")
-    mkdir("/boot/efi/loader/entries")
-    mkdir("/boot/efi/Drauger_OS")
-    environ["SYSTEMD_RELAX_ESP_CHECKS"] = "1"
-    with open("/etc/environment", "a") as envi:
-        envi.write("export SYSTEMD_RELAX_ESP_CHECKS=1")
-    try:
-        check_call(["bootctl", "--path=/boot/efi", "install"], stdout=stderr.buffer)
-    except CalledProcessError as e:
-        eprint("WARNING: bootctl issued CalledProcessError:")
-        eprint(e)
-        eprint("Performing manual installation of systemd-boot.")
-        try:
-            mkdir("/boot/efi/EFI")
-        except FileExistsError:
-            pass
-        try:
-            mkdir("/boot/efi/EFI/systemd")
-        except FileExistsError:
-            pass
-        try:
-            mkdir("/boot/efi/EFI/BOOT")
-        except FileExistsError:
-            pass
-        try:
-            mkdir("/boot/efi/EFI/Linux")
-        except FileExistsError:
-            pass
-        try:
-            copyfile("/usr/lib/systemd/boot/efi/systemd-bootx64.efi", "/boot/efi/EFI/BOOT/BOOTX64.EFI")
-        except FileExistsError:
-            pass
-        try:
-            copyfile("/usr/lib/systemd/boot/efi/systemd-bootx64.efi", "/boot/efi/EFI/systemd/systemd-bootx64.efi")
-        except FileExistsError:
-            pass
-    with open("/boot/efi/loader/loader.conf", "w+") as loader_conf:
-        loader_conf.write("default Drauger_OS\ntimeout 5\neditor 1")
-    try:
-        check_call(["chattr", "-i", "/boot/efi/loader/loader.conf"], stdout=stderr.buffer)
-    except CalledProcessError:
-        eprint("CHATTR FAILED ON loader.conf, setting octal permissions to 444")
-        chmod("/boot/efi/loader/loader.conf", 0o444)
-    systemd_boot_config.systemd_boot_config(root)
-    check_call("/etc/kernel/postinst.d/zz-update-systemd-boot", stdout=stderr.buffer)
-    check_systemd_boot(release, root)
+    check_call(["grub-mkstandalone", "--verbose", "--force",
+                "--format=arm64-efi", "--output=/boot/efi/bootx64.efi"],
+               stdout=stderr.buffer)
 
 
-def setup_lowlevel(efi, root):
+def setup_lowlevel(bootloader, root):
     """Set up kernel and bootloader"""
     release = check_output(["uname", "--release"]).decode()[0:-1]
     set_plymouth_theme()
     eprint("\n\t###\tMAKING INITRAMFS\t###\t")
     check_call(["mkinitramfs", "-o", "/boot/initrd.img-" + release], stdout=stderr.buffer)
-    install_bootloader(efi, root, release)
+    install_bootloader(bootloader)
     sleep(0.5)
     symlink("/boot/initrd.img-" + release, "/boot/initrd.img")
     symlink("/boot/vmlinuz-" + release, "/boot/vmlinuz")
-
-def check_systemd_boot(release, root):
-    """Ensure systemd-boot was configured correctly"""
-    # Initialize variables
-    root_flags = "quiet splash"
-    recovery_flags = "ro recovery nomodeset"
-    # Get Root UUID
-    uuid = check_output(["blkid", "-s", "PARTUUID", "-o", "value", root]).decode()[0:-1]
-
-    # Check for standard boot config
-    if not path.exists("/boot/efi/loader/entries/Drauger_OS.conf"):
-        # Write standard boot conf if it doesn't exist
-        eprint("Standard Systemd-boot entry non-existant")
-        try:
-            with open("/boot/efi/loader/entries/Drauger_OS.conf", "w+") as main_conf:
-                main_conf.write("""title   Drauger OS
-linux   /Drauger_OS/vmlinuz
-initrd  /Drauger_OS/initrd.img
-options root=PARTUUID=%s %s""" % (uuid, root_flags))
-            eprint("Made standard systemd-boot entry")
-        # Raise an exception if we cannot write the entry
-        except (PermissionError, IOError):
-            eprint("\t###\tERROR\t###\tCANNOT MAKE STANDARD SYSTEMD-BOOT ENTRY CONFIG FILE\t###ERROR\t###\t")
-            raise IOError("Cannot make standard systemd-boot entry config file. Installation will not boot.")
-    else:
-        eprint("Standard systemd-boot entry checks out")
-    # Check for recovery boot config
-    if not path.exists("/boot/efi/loader/entries/Drauger_OS_Recovery.conf"):
-        eprint("Recovery Systemd-boot entry non-existant")
-        try:
-            # Write recovery boot conf if it doesn't exist
-            with open("/boot/efi/loader/entries/Drauger_OS_Recovery.conf", "w+") as main_conf:
-                main_conf.write("""title   Drauger OS Recovery
-linux   /Drauger_OS/vmlinuz
-initrd  /Drauger_OS/initrd.img
-options root=PARTUUID=%s %s""" % (uuid, recovery_flags))
-            eprint("Made recovery systemd-boot entry")
-        # Raise a warning if we cannot write the entry
-        except (PermissionError, IOError):
-            eprint("\t###\WARNING\t###\tCANNOT MAKE RECOVERY SYSTEMD-BOOT ENTRY CONFIG FILE\t###WARNING\t###\t")
-            warnings.warn("Cannot make recovery systemd-boot entry config file. Installation will not be recoverable.")
-    else:
-        eprint("Recovery systemd-boot entry checks out")
-
-    # Make sure we have our kernel image, config file, initrd, and System map
-    files = listdir("/boot")
-    vmlinuz = []
-    config = []
-    initrd = []
-    sysmap = []
-    # Sort the files by name
-    for each in files:
-        if "vmlinuz-" in each:
-            vmlinuz.append(each)
-        elif "config-" in each:
-            config.append(each)
-        elif "initrd.img-" in each:
-            initrd.append(each)
-        elif "System.map-" in each:
-            sysmap.append(each)
-
-    # Sort the file names by version number.
-    # The file with the highest index in the list is the latest version
-    vmlinuz = sorted(vmlinuz)[-1]
-    config = sorted(config)[-1]
-    initrd = sorted(initrd)[-1]
-    sysmap = sorted(sysmap)[-1]
-    # Copy the latest files into place
-    # Also, rename them so that systemd-boot can find them
-    if not path.exists("/boot/efi/Drauger_OS/vmlinuz"):
-        eprint("vmlinuz non-existant")
-        copyfile("/boot/" + vmlinuz, "/boot/efi/Drauger_OS/vmlinuz")
-        eprint("vmlinuz copied")
-    else:
-        eprint("vmlinuz checks out")
-    if not path.exists("/boot/efi/Drauger_OS/config"):
-        eprint("config non-existant")
-        copyfile("/boot/" + config, "/boot/efi/Drauger_OS/config")
-        eprint("config copied")
-    else:
-        eprint("Config checks out")
-    if not path.exists("/boot/efi/Drauger_OS/initrd.img"):
-        eprint("initrd.img non-existant")
-        copyfile("/boot/" + initrd, "/boot/efi/Drauger_OS/initrd.img")
-        eprint("initrd.img copied")
-    else:
-        eprint("initrd.img checks out")
-    if not path.exists("/boot/efi/Drauger_OS/System.map"):
-        eprint("System.map non-existant")
-        copyfile("/boot/" + sysmap, "/boot/efi/Drauger_OS/System.map")
-        eprint("System.map copied")
-    else:
-        eprint("System.map checks out")
-
-
 
 
 def make_num(string):
@@ -394,6 +235,7 @@ def make_num(string):
     except ValueError:
         return float(string)
 
+
 def install(settings, internet):
     """Entry point for installation procedure"""
     processes_to_do = dir(MainInstallation)
@@ -401,7 +243,7 @@ def install(settings, internet):
         if processes_to_do[each][0] == "_":
             del processes_to_do[each]
     MainInstallation(processes_to_do, settings)
-    setup_lowlevel(settings["EFI"], settings["ROOT"], settings["bootloader package"])
+    setup_lowlevel(settings["bootloader package"])
 
 if __name__ == "__main__":
     # get length of argv
@@ -422,10 +264,6 @@ if __name__ == "__main__":
     # settings["MODEL"] = argv[11]
     # settings["LAYOUT"] = argv[12]
     # settings["VARIENT"] = argv[13]
-    # if ARGC == 15:
-        # settings["SWAP"] = argv[14]
-    # else:
-        # settings["SWAP"] = None
     INTERNET = check_internet()
 
     install(SETTINGS, INTERNET)

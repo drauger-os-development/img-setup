@@ -302,11 +302,6 @@ def download_config():
     return json.loads(http.request("GET", "https://raw.githubusercontent.com/drauger-os-development/img-setup/master/bootloaders.json").data)
 
 
-def download_deps():
-    """install elevate dep"""
-    print("Installing/Upgrading Dependencies . . .")
-    check_call(["pip3", "install", "--upgrade", "-r", "requirements.txt"])
-
 def eprint(*args, **kwargs):
     """Make it easier for us to print to stderr"""
     print(*args, file=stderr, **kwargs)
@@ -321,11 +316,13 @@ if __name__ == '__main__':
     else:
         internet = check_internet()
         if getuid() != 0:
-            download_deps()
-            from elevate import elevate
-            # change argv[0] to be path to this script
-            argv[0] = getcwd() + "/setup_img.py"
-            elevate()
+            print("setup_img.py is not running as root. Would you like to exit now, or elevate to root here?")
+            choice = input("exit or elevate: ").lower()
+            if choice == "elevate":
+                exit(check_call(["sudo", argv[0]]))
+            else:
+                print("Exiting . . .")
+                exit(0)
         try:
             config = download_config()
         except:

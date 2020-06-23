@@ -24,6 +24,7 @@
 """Setup IMG files for installation on a variety of ARM computers"""
 from os import chroot, fchdir, O_RDONLY, chdir, path, close, getuid, getcwd
 from os import open as get
+from shutil import move, copyfile
 from subprocess import check_call, CalledProcessError, check_output
 from sys import argv, stderr
 from getpass import getpass
@@ -293,7 +294,86 @@ def setup(config):
 def configuration_procedure(settings, location):
     __update__(2)
     __mount__(location)
-    __update__(4)
+    __update__(6)
+    for each in file_list:
+        if ((each == "__pycache__") or (".py" in each)):
+            continue
+        copyfile("/usr/share/system-installer/modules/" + each, "/mnt/" + each)
+    __update__(7)
+    move("/mnt/etc/resolv.conf", "/mnt/etc/resolv.conf.save")
+    copyfile("/etc/resolv.conf", "/mnt/etc/resolv.conf")
+    __update(8)
+    try:
+        if settings["LANG"] == "":
+            print("\r")
+            eprint("LANG is not set. Defaulting to environment variable $LANG")
+            settings["LANG"] = getenv("LANG")
+    except KeyError:
+        print("\r")
+        eprint("LANG is not set. Defaulting to environment variable $LANG")
+        settings["LANG"] = getenv("LANG")
+    try:
+        if settings["TIME_ZONE"] == "":
+            print("\r")
+            eprint("TIME_ZONE is not set. Defaulting to /etc/timezone setting")
+            with open("/etc/timezone", "r") as tzdata:
+                settings["TIME_ZONE"] = tz.data.read()[0:-1]
+    except KeyError:
+        print("\r")
+        eprint("TIME_ZONE is not set. Defaulting to /etc/timezone setting")
+        with open("/etc/timezone", "r") as tzdata:
+            settings["TIME_ZONE"] = tz.data.read()[0:-1]
+    try:
+        if settings["USERNAME"] == "":
+            print("\r")
+            eprint("USERNAME NOT SET")
+            settings["USERNAME"] = get_username()
+    except KeyError:
+        print("\r")
+        eprint("USERNAME NOT SET")
+        settings["USERNAME"] = get_username()
+    try:
+        if settings["COMPUTER_NAME"] == "":
+            print("\r")
+            eprint("COMP_NAME is not set. Defaulting to drauger-system-installed")
+            settings["COMPUTER_NAME"] = "drauger-system-installed"
+    except KeyError:
+        print("\r")
+        eprint("COMP_NAME is not set. Defaulting to drauger-system-installed")
+        settings["COMPUTER_NAME"] = "drauger-system-installed"
+    try:
+        if settings["PASSWORD"] == "":
+            print("\r")
+            eprint("PASSWORD NOT SET")
+            settings["PASSWORD"] = get_passwd()
+    except KeyError:
+        print("\r")
+        eprint("PASSWORD NOT SET")
+        settings["PASSWORD"] = get_passwd()
+    try:
+        if settings["UPDATES"] == "":
+            print("\r")
+            eprint("UPDATES is not set. Defaulting to false.")
+            settings["UPDATES"] = False
+    except KeyError:
+        print("\r")
+        eprint("UPDATES is not set. Defaulting to false.")
+        settings["UPDATES"] = False
+    __update__(14)
+    chdir("/mnt")
+    real_root = arch_chroot("/mnt")
+    __update__(19)
+    modules.master.install(settings)
+    de_chroot(real_root, "/mnt")
+    print(Y + BOLD + "CLEANING UP . . . " + RESET)
+    for each in file_list:
+        try:
+            remove("/mnt/" + each)
+        except FileNotFoundError:
+            pass
+    remove("/mnt/etc/resolv.conf")
+    print(G + BOLD + "IMG SETUP COMPLETE!" + RESET)
+
 
 def download_config():
     """Download JSON config"""

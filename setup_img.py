@@ -145,10 +145,19 @@ def get_device(config):
     print("------")
     while True:
         print(BOLD + "Supported devices:" + RESET)
+        print(G + BOLD + "GREEN" + RESET + " is for tested and known working. " + R + BOLD + "RED" + RESET + " is for working state unknown or not working.")
         for each in config:
             print(BOLD + config[each][0] + ": " + RESET, end="")
+            count = 0
             for each1 in config[each][1]:
-                print(each1, end=", ")
+                if count == 6:
+                    print("")
+                    count = 0
+                if config[each][1][each1]:
+                    print(G + each1 + RESET, end=", ")
+                else:
+                    print(R + each1 + RESET, end=", ")
+                count = count + 1
             print("")
         device = input(G + BOLD + "Which device is yours?: " + RESET).lower()
         for each in config:
@@ -242,7 +251,7 @@ def get_time_zone():
 
 def setup(config):
     """Perform setup process"""
-    print("Setup process initited")
+    print(BOLD + "Setup process initited\n" + RESET)
     settings = {"INTERNET":True}
     settings["bootloader package"] = get_device(config)
     print("")

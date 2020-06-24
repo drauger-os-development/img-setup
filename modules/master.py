@@ -80,7 +80,6 @@ class MainInstallation():
 
     def set_networking(COMPUTER_NAME):
         """Set system hostname"""
-        eprint("Setting hostname to %s" % (COMPUTER_NAME))
         try:
             remove("/etc/hostname")
         except FileNotFoundError:
@@ -111,8 +110,6 @@ class MainInstallation():
             except PermissionError:
                 chmod("/install_updates.sh", 0o777)
                 check_call("/install_updates.sh")
-        elif not INTERNET:
-            eprint("Cannot install updates. No internet.")
 
     def apt(UPDATES, INTERNET):
         """Run commands for apt sequentially to avoid front-end lock"""
@@ -210,7 +207,6 @@ def setup_lowlevel(bootloader, root):
     """Set up kernel and bootloader"""
     release = check_output(["uname", "--release"]).decode()[0:-1]
     set_plymouth_theme()
-    eprint("\n\t###\tMAKING INITRAMFS\t###\t")
     check_call(["mkinitramfs", "-o", "/boot/initrd.img-" + release], stdout=stderr.buffer)
     install_bootloader(bootloader)
     sleep(0.5)

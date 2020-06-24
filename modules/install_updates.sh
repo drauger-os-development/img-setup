@@ -21,16 +21,10 @@
 #  MA 02110-1301, USA.
 #
 #
-builtin echo -e "\t###\tinstall_updates.sh STARTED\t###\t" 1>&2
 set -e
 set -o pipefail
 apt update 2>/dev/null 1>>/tmp/system-installer.log
-builtin echo "67"
 apt -y dist-upgrade 2>/dev/null 1>>/tmp/system-installer.log
-builtin echo "70"
 apt -y autoremove 2>/dev/null 1>>/tmp/system-installer.log
-builtin echo "72"
 apt clean 2>/dev/null 1>>/tmp/system-installer.log
 set +e
-builtin echo "74"
-builtin echo -e "\t###\tinstall_updates.sh CLOSED\t###\t" 1>&2

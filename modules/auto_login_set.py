@@ -33,7 +33,6 @@ def eprint(*args, **kwargs):
 
 def auto_login_set(login, username):
     """Set Auto-Login Setting for the current user"""
-    eprint("\t###\tauto_login_set.py started\t###\t")
     new_conf = ""
     with open("/etc/lightdm/lightdm.conf", "r") as conf:
         new_conf = conf.read()
@@ -60,7 +59,6 @@ def auto_login_set(login, username):
         for each in new_conf:
             file.write(each)
             file.write('\n')
-    eprint("\t###\tauto_login_set.py closed\t###\t")
 
 if __name__ == '__main__':
     auto_login_set(argv[1], argv[2])

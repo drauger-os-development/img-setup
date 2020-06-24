@@ -22,9 +22,9 @@
 #
 #
 """Set system time"""
-from os import symlink, system, remove
+from os import symlink, remove
 from sys import stderr, argv
-from subprocess import Popen
+from subprocess import Popen, check_call
 
 
 def eprint(*args, **kwargs):
@@ -46,7 +46,7 @@ def _link(location):
 def set_time(time_zone):
     """Set time zone and hardware clock"""
     _link(time_zone)
-    system("hwclock --systohc")
+    check_call(["hwclock", "--systohc"])
 
 
 if __name__ == '__main__':

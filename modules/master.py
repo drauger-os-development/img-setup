@@ -40,7 +40,6 @@ import warnings
 # import our own programs
 import modules.auto_login_set as auto_login_set
 import modules.set_time as set_time
-import modules.systemd_boot_config as systemd_boot_config
 import modules.set_locale as set_locale
 
 def eprint(*args, **kwargs):

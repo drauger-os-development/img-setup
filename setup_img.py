@@ -361,6 +361,27 @@ def configuration_procedure(settings, location):
         print("\r")
         eprint("UPDATES is not set. Defaulting to false.")
         settings["UPDATES"] = False
+    try:
+        if settings["MODEL"] == "":
+            print("\r")
+            eprint("KEYBOARD MODEL is not set, defaulting to kernel keymap")
+            settings["MODEL"] = "Do not configure keyboard; keep kernel keymap"
+    except KeyError:
+        settings["MODEL"] = "Do not configure keyboard; keep kernel keymap"
+    try:
+        if settings["LAYOUT"] == "":
+            print("\r")
+            eprint("KEYBOARD LAYOUT is not set, defaulting to English (US)")
+            settings["LAYOUT"] = "English (US)"
+    except KeyError:
+        settings["LAYOUT"] = "English (US)"
+    try:
+        if settings["VARIENT"] == "":
+            print("\r")
+            eprint("KEYBOARD VARIENT is not set, defaulting to English (US)")
+            settings["VARIENT"] = "English (US)"
+    except KeyError:
+        settings["VARIENT"] = "English (US)"
     __update__(14)
     chdir("/mnt")
     real_root = arch_chroot("/mnt")

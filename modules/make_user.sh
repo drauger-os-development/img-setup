@@ -24,16 +24,16 @@
 USERNAME="$1"
 PASSWORD="$2"
 {
-	useradd --create-home --system --shell /bin/bash --groups adm,cdrom,sudo,audio,dip,plugdev,lpadmin "$USERNAME"
-} || {
 	#change live user to $USERNAME
 	usermod -l "$USERNAME" live 1>&2
 	groupmod -n "$USERNAME" live 1>&2
 	#change refrences from old home to new
 	sed -i "s:/home/live:/home/$USERNAME:g" /home/live/.config/gtk-3.0/bookmarks 1>&2
 	#rename home directory
-	mv -v /home/live /home/"$USERNAME" 1>&2
+	mv /home/live /home/"$USERNAME" 1>&2
 	sed -i "s/live/$USERNAME/g" /etc/passwd  1>&2
+} || {
+	useradd --create-home --system --shell /bin/bash --groups adm,cdrom,sudo,audio,dip,plugdev,lpadmin "$USERNAME"
 }
 #change password
 builtin echo "$USERNAME:$PASSWORD" | chpasswd

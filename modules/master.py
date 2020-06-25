@@ -210,8 +210,14 @@ def setup_lowlevel(bootloader):
     check_call(["mkinitramfs", "-o", "/boot/initrd.img-" + release], stdout=stderr.buffer)
     install_bootloader(bootloader)
     sleep(0.5)
-    symlink("/boot/initrd.img-" + release, "/boot/initrd.img")
-    symlink("/boot/vmlinuz-" + release, "/boot/vmlinuz")
+    try:
+        symlink("/boot/initrd.img-" + release, "/boot/initrd.img")
+    except FileExistsError:
+        pass
+    try:
+        symlink("/boot/vmlinuz-" + release, "/boot/vmlinuz")
+    except FileExistsError:
+        pass
 
 
 def make_num(string):

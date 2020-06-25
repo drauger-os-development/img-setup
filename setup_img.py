@@ -395,6 +395,8 @@ def configuration_procedure(settings, location):
         except FileNotFoundError:
             pass
     remove("/mnt/etc/resolv.conf")
+    move("/mnt/etc/resolv.conf", "/mnt/etc/resolv.conf.save")
+    __unmount__("/mnt")
     print(G + BOLD + "IMG SETUP COMPLETE!" + RESET)
 
 

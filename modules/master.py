@@ -203,7 +203,7 @@ def _install_grub():
                stdout=stderr.buffer)
 
 
-def setup_lowlevel(bootloader, root):
+def setup_lowlevel(bootloader):
     """Set up kernel and bootloader"""
     release = check_output(["uname", "--release"]).decode()[0:-1]
     set_plymouth_theme()

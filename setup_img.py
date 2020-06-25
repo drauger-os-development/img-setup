@@ -324,7 +324,7 @@ def configuration_procedure(settings, location):
         print("\r")
         eprint("TIME_ZONE is not set. Defaulting to /etc/timezone setting")
         with open("/etc/timezone", "r") as tzdata:
-            settings["TIME_ZONE"] = tz.data.read()[0:-1]
+            settings["TIME_ZONE"] = tzdata.read()[0:-1]
     try:
         if settings["USERNAME"] == "":
             print("\r")

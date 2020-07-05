@@ -310,7 +310,7 @@ def configuration_procedure(settings, location):
     copyfile("/etc/resolv.conf", "/mnt/etc/resolv.conf")
     __update__(8)
     try:
-        if settings["LANG"] == "":
+        if settings["LANG"] in ("", None):
             print("\r")
             eprint("LANG is not set. Defaulting to environment variable $LANG")
             settings["LANG"] = getenv("LANG")
@@ -319,7 +319,7 @@ def configuration_procedure(settings, location):
         eprint("LANG is not set. Defaulting to environment variable $LANG")
         settings["LANG"] = getenv("LANG")
     try:
-        if settings["TIME_ZONE"] == "":
+        if settings["TIME_ZONE"] in ("", None):
             print("\r")
             eprint("TIME_ZONE is not set. Defaulting to /etc/timezone setting")
             with open("/etc/timezone", "r") as tzdata:
@@ -330,7 +330,7 @@ def configuration_procedure(settings, location):
         with open("/etc/timezone", "r") as tzdata:
             settings["TIME_ZONE"] = tzdata.read()[0:-1]
     try:
-        if settings["USERNAME"] == "":
+        if settings["USERNAME"] in ("", None):
             print("\r")
             eprint("USERNAME NOT SET")
             settings["USERNAME"] = get_username()
@@ -339,7 +339,7 @@ def configuration_procedure(settings, location):
         eprint("USERNAME NOT SET")
         settings["USERNAME"] = get_username()
     try:
-        if settings["COMPUTER_NAME"] == "":
+        if settings["COMPUTER_NAME"] in ("", None):
             print("\r")
             eprint("COMP_NAME is not set. Defaulting to drauger-system-installed")
             settings["COMPUTER_NAME"] = "drauger-system-installed"
@@ -348,7 +348,7 @@ def configuration_procedure(settings, location):
         eprint("COMP_NAME is not set. Defaulting to drauger-system-installed")
         settings["COMPUTER_NAME"] = "drauger-system-installed"
     try:
-        if settings["PASSWORD"] == "":
+        if settings["PASSWORD"] in ("", None):
             print("\r")
             eprint("PASSWORD NOT SET")
             settings["PASSWORD"] = get_passwd()
@@ -357,7 +357,7 @@ def configuration_procedure(settings, location):
         eprint("PASSWORD NOT SET")
         settings["PASSWORD"] = get_passwd()
     try:
-        if settings["UPDATES"] == "":
+        if settings["UPDATES"] in ("", None):
             print("\r")
             eprint("UPDATES is not set. Defaulting to false.")
             settings["UPDATES"] = False
@@ -366,21 +366,21 @@ def configuration_procedure(settings, location):
         eprint("UPDATES is not set. Defaulting to false.")
         settings["UPDATES"] = False
     try:
-        if settings["MODEL"] == "":
+        if settings["MODEL"] in ("", None):
             print("\r")
             eprint("KEYBOARD MODEL is not set, defaulting to kernel keymap")
             settings["MODEL"] = "Do not configure keyboard; keep kernel keymap"
     except KeyError:
         settings["MODEL"] = "Do not configure keyboard; keep kernel keymap"
     try:
-        if settings["LAYOUT"] == "":
+        if settings["LAYOUT"] in ("", None):
             print("\r")
             eprint("KEYBOARD LAYOUT is not set, defaulting to English (US)")
             settings["LAYOUT"] = "English (US)"
     except KeyError:
         settings["LAYOUT"] = "English (US)"
     try:
-        if settings["VARIENT"] == "":
+        if settings["VARIENT"] in ("", None):
             print("\r")
             eprint("KEYBOARD VARIENT is not set, defaulting to English (US)")
             settings["VARIENT"] = "English (US)"

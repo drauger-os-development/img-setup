@@ -22,7 +22,7 @@
 #
 #
 """Setup IMG files for installation on a variety of ARM computers"""
-from os import chroot, fchdir, O_RDONLY, chdir, path, close, getuid, getcwd, listdir
+from os import chroot, fchdir, O_RDONLY, chdir, path, close, getuid, getcwd, listdir, getenv, remove, devnull
 from os import open as get
 from shutil import move, copyfile
 from subprocess import check_call, CalledProcessError, check_output
@@ -48,7 +48,8 @@ def __mount__(device):
     Calling Mount with check_call is the safer option.
     """
     try:
-        check_call(["mount", "-t", "auto", "-o", "loop", device, "/mnt"])
+        check_call(["mount", "-t", "auto", "-o", "loop", device, "/mnt"],
+                   stdout=devnull, stderr=devnull)
     except CalledProcessError as e:
         eprint(R + BOLD + "COULD NOT MOUNT " + device + RESET)
         eprint(e)
@@ -57,22 +58,25 @@ def __chroot_mount__(device, path_dir, fstype="", options=""):
     """Mount necessary psudeo-filesystems"""
     if device == "/run":
         try:
-            check_call(["mount", device, path_dir, "--bind"])
+            check_call(["mount", device, path_dir, "--bind"], stdout=devnull,
+                       stderr=devnull)
         except CalledProcessError:
             pass
     else:
         try:
-            check_call(["mount", device, path_dir, "-t", fstype, "-o", options])
+            check_call(["mount", device, path_dir, "-t", fstype, "-o", options],
+                       stdout=devnull, stderr=devnull)
         except CalledProcessError:
             pass
 
 def __unmount__(path_dir):
     """unmount psudeo-filesystems"""
     try:
-        check_call(["umount", path_dir])
+        check_call(["umount", path_dir], stdout=devnull, stderr=devnull)
     except CalledProcessError:
         try:
-            check_call(["umount", "-l", path_dir])
+            check_call(["umount", "-l", path_dir], stdout=devnull,
+                       stderr=devnull)
         except CalledProcessError:
             pass
 

@@ -24,7 +24,7 @@
 """Set system locale for a given langauage name"""
 from __future__ import print_function
 from sys import argv, stderr
-from os import remove
+from os import remove, devnull
 from subprocess import check_call
 
 def eprint(*args, **kwargs):
@@ -70,8 +70,9 @@ def _setlocale(locale):
     contents = "\n".join(contents)
     with open("/etc/locale.gen", "w+") as new_gen:
         new_gen.write(contents)
-    check_call(["locale-gen"], stdout=stderr.buffer)
-    check_call(["update-locale", "LANG=%s.UTF-8" % (locale), "LANGUAGE"])
+    check_call(["locale-gen"], stdout=devnull, stderr=devnull)
+    check_call(["update-locale", "LANG=%s.UTF-8" % (locale), "LANGUAGE"],
+               stdout=devnull, stderr=devnull)
 
 
 if __name__ == '__main__':

@@ -28,7 +28,7 @@ from __future__ import print_function
 from sys import argv, stderr
 from subprocess import Popen, PIPE, check_output, check_call, CalledProcessError
 import multiprocessing
-from os import remove, mkdir, environ, symlink, chmod, listdir, path
+from os import remove, mkdir, environ, symlink, chmod, listdir, path, devnull
 from shutil import rmtree, copyfile
 from inspect import getfullargspec
 from time import sleep
@@ -97,19 +97,23 @@ class MainInstallation():
         """Set up main user"""
         # This needs to be set up in Python. Leave it in shell for now
         try:
-            Popen(["/make_user.sh", USERNAME, PASSWORD])
+            check_call(["/make_user.sh", USERNAME, PASSWORD], stdout=devnull,
+                  stderr=devnull)
         except PermissionError:
             chmod("/make_user.sh", 0o777)
-            Popen(["/make_user.sh", USERNAME, PASSWORD])
+            check_call(["/make_user.sh", USERNAME, PASSWORD], stdout=devnull,
+                       stderr=devnull)
 
     def __install_updates__(UPDATES, INTERNET):
         """Install updates"""
         if ((UPDATES) and (INTERNET)):
             try:
-                check_call("/install_updates.sh")
+                check_call("/install_updates.sh", stdout=devnull,
+                           stderr=devnull)
             except PermissionError:
                 chmod("/install_updates.sh", 0o777)
-                check_call("/install_updates.sh")
+                check_call("/install_updates.sh", stdout=devnull,
+                           stderr=devnull)
 
     def apt(UPDATES, INTERNET):
         """Run commands for apt sequentially to avoid front-end lock"""
@@ -117,7 +121,8 @@ class MainInstallation():
 
     def set_passwd(PASSWORD):
         """Set Root password"""
-        process = Popen("chpasswd", stdout=stderr.buffer, stdin=PIPE, stderr=PIPE)
+        process = check_call("chpasswd", stdout=devnull, stdin=PIPE,
+                             stderr=devnull)
         process.communicate(input=bytes(r"root:%s" % (PASSWORD), "utf-8"))
 
     def lightdm_config(LOGIN, USERNAME):
@@ -153,22 +158,22 @@ XKBOPTIONS=\"\"
 
 BACKSPACE=\"guess\"
 """ % (xkbm, xkbl, xkbv))
-        Popen(["udevadm", "trigger", "--subsystem-match=input",
-               "--action=change"], stdout=stderr.buffer)
+        check_call(["udevadm", "trigger", "--subsystem-match=input",
+               "--action=change"], stdout=devnull, stderr=devnull)
 
 def set_plymouth_theme():
     """Ensure the plymouth theme is set correctly"""
-    Popen(["update-alternatives", "--install",
+    check_calln(["update-alternatives", "--install",
            "/usr/share/plymouth/themes/default.plymouth",
            "default.plymouth",
            "/usr/share/plymouth/themes/drauger-theme/drauger-theme.plymouth",
            "100", "--slave",
            "/usr/share/plymouth/themes/default.grub", "default.plymouth.grub",
            "/usr/share/plymouth/themes/drauger-theme/drauger-theme.grub"],
-          stdout=stderr.buffer)
-    process = Popen(["update-alternatives", "--config",
-                     "default.plymouth"], stdout=stderr.buffer, stdin=PIPE,
-                    stderr=PIPE)
+          stdout=devnull, stderr=devnull)
+    process = check_call(["update-alternatives", "--config",
+                     "default.plymouth"], stdout=devnull, stdin=PIPE,
+                    stderr=devnull)
     process.communicate(input=bytes("2\n", "utf-8"))
 
 
@@ -177,7 +182,7 @@ def _install_bootloader_package(package):
 
     Package should be the package name of the bootloader
     """
-    check_call(["apt", "install", package])
+    check_call(["apt", "install", package], stdout=devnull, stderr=devnull)
 
 
 def install_bootloader(bootloader):
@@ -195,19 +200,21 @@ def _install_grub():
     """set up and install GRUB.
     This function is only retained for BIOS systems.
     """
-    check_call(["grub-mkdevicemap", "--verbose"], stdout=stderr.buffer)
+    check_call(["grub-mkdevicemap", "--verbose"], stdout=devnull,
+               stderr=devnull)
     check_call(["grub-mkconfig", "-o", "/boot/grub/grub.cfg"],
-               stdout=stderr.buffer)
+               stdout=devnull, stderr=devnull)
     check_call(["grub-mkstandalone", "--verbose", "--force",
                 "--format=arm64-efi", "--output=/boot/efi/bootx64.efi"],
-               stdout=stderr.buffer)
+               stdout=devnull, stderr=devnull)
 
 
 def setup_lowlevel(bootloader):
     """Set up kernel and bootloader"""
     release = check_output(["uname", "--release"]).decode()[0:-1]
     set_plymouth_theme()
-    check_call(["mkinitramfs", "-o", "/boot/initrd.img-" + release], stdout=stderr.buffer)
+    check_call(["mkinitramfs", "-o", "/boot/initrd.img-" + release],
+               stdout=devnull, stderr=devnull)
     install_bootloader(bootloader)
     sleep(0.5)
     try:

@@ -201,7 +201,7 @@ def get_hostname():
     print(G + BOLD + "COMPUTER NAME" + RESET)
     print("------")
     while True:
-        hostname = input("What do your computer to be named?: ").lower()
+        hostname = input("What do you want your computer to be named?: ").lower()
         if has_special_character(hostname):
             eprint(R + BOLD + "Special Characters Not Allowed" + RESET)
         elif hasspace(hostname):
@@ -215,7 +215,7 @@ def get_updates():
     """get whether the user wants install updates or not"""
     print(G + BOLD + "UPDATE SETTINGS" + RESET)
     print("------")
-    updates = input("Do you want to make install updates in the IMG file(if you are on an AMD64 computer, select 'no')? [Y/n]: ").lower()
+    updates = input("Do you want to make install updates in the IMG file (if you are on an AMD64 computer, select 'no')? [Y/n]: ").lower()
     if updates in ("y", "yes"):
         return True
     else:
@@ -395,7 +395,7 @@ def configuration_procedure(settings, location):
         except FileNotFoundError:
             pass
     remove("/mnt/etc/resolv.conf")
-    move("/mnt/etc/resolv.conf", "/mnt/etc/resolv.conf.save")
+    move("/mnt/etc/resolv.conf.save", "/mnt/etc/resolv.conf")
     __unmount__("/mnt")
     print(G + BOLD + "IMG SETUP COMPLETE!" + RESET)
 

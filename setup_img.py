@@ -250,8 +250,68 @@ def get_keyboard():
 
 def get_time_zone():
     """Get keyboard settings"""
+    region = None
+    subregion = None
     print(G + BOLD + "TIME SETTINGS" + RESET)
     print("------")
+    while True:
+        print(G + "REGION" + RESET)
+        zones = ["Africa", "America", "Antarctica", "Arctic", "Asia",
+                    "Atlantic", "Australia", "Brazil", "Canada", "Chile",
+                    "Europe", "Indian", "Mexico", "Pacific", "US"]
+        print("Which region is yours?")
+        for each in range(len(zones)):
+            print("[%s] %s" % (each, zones[each]))
+        answer = input("Region number or name: ")
+        try:
+            region = zones[int(answer)]
+            break
+        except IndexError:
+            eprint(R + "Not a valid region number. Please try again." + RESET)
+        except (TypeError, ValueError):
+            for each in zones:
+                if answer.lower() == each.lower():
+                    region = each
+                    break
+            if region is None:
+                eprint(R + "Not a valid region. Please try again." + RESET)
+            else:
+                break
+    while True:
+        print(G + "SUBREGION" + RESET)
+        zones = sorted(listdir("/usr/share/zoneinfo/" + region))
+        while True:
+            print("Which subregion is yours?")
+            for each in range(len(zones)):
+                print("[%s] %s" % (each, zones[each]))
+            answer = input("Region number or name (or 'filter' to filter): ")
+            if answer.lower() == "filter":
+                answer = input("Search term: ")
+                for each in range(len(zones) - 1, -1, -1):
+                    if answer not in zones[each]:
+                        del zones[each]
+            else:
+                break
+            if len(zones) == 0:
+                eprint(R + "No matching options." + RESET)
+                break
+        if len(zones) == 0:
+            continue
+        try:
+            subregion = zones[int(answer)]
+            break
+        except IndexError:
+            eprint(R + "Not a valid region number. Please try again." + RESET)
+        except (TypeError, ValueError):
+            for each in zones:
+                if answer.lower() == each.lower():
+                    subregion = each
+                    break
+            if subregion is None:
+                eprint(R + "Not a valid subregion. Please try again." + RESET)
+            else:
+                break
+    return(region + "/" + subregion)
 
 
 def setup(config):

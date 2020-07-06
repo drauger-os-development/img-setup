@@ -33,28 +33,7 @@ def eprint(*args, **kwargs):
 
 def set_locale(lang_set):
     """Figure out locale code for a given language name"""
-    if lang_set == "english":
-        _setlocale("en_US")
-    elif lang_set == "chinese":
-        _setlocale("zh_CN")
-    elif lang_set == "japanese":
-        _setlocale("ja_JP")
-    elif lang_set == "spanish":
-        _setlocale("es_ES")
-    elif lang_set == "hindi":
-        _setlocale("hi_IN")
-    elif lang_set == "german":
-        _setlocale("de_DE")
-    elif lang_set == "french":
-        _setlocale("fr_CA")
-    elif lang_set == "italian":
-        _setlocale("it_IT")
-    elif lang_set == "korean":
-        _setlocale("ko_KR")
-    elif lang_set == "russian":
-        _setlocale("ru_RU")
-    else:
-        _setlocale("en_US")
+    _setlocale(lang_set)
 
 def _setlocale(locale):
     """Handle setting locale for a given locale code"""
@@ -63,15 +42,15 @@ def _setlocale(locale):
         contents = gen_file.read()
     contents = contents.split("\n")
     for each in enumerate(contents):
-        if contents[each[0]] == ("# " + locale + ".UTF-8 UTF-8"):
-            contents[each[0]] = locale + ".UTF-8 UTF-8"
+        if contents[each[0]] == ("# " + locale + " UTF-8"):
+            contents[each[0]] = locale + " UTF-8"
             break
     remove("/etc/locale.gen")
     contents = "\n".join(contents)
     with open("/etc/locale.gen", "w+") as new_gen:
         new_gen.write(contents)
     check_call(["locale-gen"], stdout=devnull, stderr=devnull)
-    check_call(["update-locale", "LANG=%s.UTF-8" % (locale), "LANGUAGE"],
+    check_call(["update-locale", "LANG=%s" % (locale), "LANGUAGE"],
                stdout=devnull, stderr=devnull)
 
 

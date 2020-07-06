@@ -28,6 +28,7 @@ from shutil import move, copyfile
 from subprocess import check_call, CalledProcessError, check_output
 from sys import argv, stderr
 from getpass import getpass
+from copy import deepcopy
 import json
 import urllib3
 import re
@@ -238,8 +239,61 @@ def get_autologin():
 
 def get_lang():
     """Get language settings"""
+    locales = None
+    locale = None
     print(G + BOLD + "LANGUAGE SETTINGS" + RESET)
     print("------")
+    answer = input("Would you like the IMG file to use the same lanaguage as this computer? [Y/n]: ").lower()
+    if answer in ("yes", "y"):
+        return(getenv("LANG"))
+    print("Parsing language options . . .")
+    with open("/etc/locale.gen", "r") as locale_file:
+        data = locale_file.read()
+    data = data.split("\n")
+    for each in range(len(data) - 1, -1, -1):
+        if "UTF-8" not in data[each][-5:]:
+            del data[each]
+            continue
+        data[each] = data[each].split(" ")
+        if data[each][0] == "#":
+            data[each] = data[each][1][:-6]
+        else:
+            data[each] = data[each][0][:-6]
+    for each in range(len(data) - 1, -1, -1):
+        if (("@" in data[each]) or ("_" not in data[each])):
+            del data[each]
+    while True:
+        locales = deepcopy(data)
+        while True:
+            print("Which locale is yours?")
+            for each in range(len(locales)):
+                print("[%s] %s" % (each, locales[each]))
+            answer = input("Locale number or name (or 'filter' to filter): ")
+            if answer.lower() == "filter":
+                answer = input("Search term: ")
+                for each in range(len(locales) - 1, -1, -1):
+                    if answer not in locales[each]:
+                        del locales[each]
+            else:
+                break
+            if len(locales) == 0:
+                eprint(R + "No matching options." + RESET)
+                continue
+        try:
+            locale = locales[int(answer)]
+            break
+        except IndexError:
+            eprint(R + "Not a valid locale number. Please try again." + RESET)
+        except (TypeError, ValueError):
+            for each in locales:
+                if answer.lower() == each.lower():
+                    locale = each
+                    break
+            if locales is None:
+                eprint(R + "Not a valid locale. Please try again." + RESET)
+            else:
+                break
+    return "%s.UTF-8" % (locale)
 
 
 def get_keyboard():

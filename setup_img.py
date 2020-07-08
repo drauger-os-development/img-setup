@@ -22,16 +22,17 @@
 #
 #
 """Setup IMG files for installation on a variety of ARM computers"""
-from os import chroot, fchdir, O_RDONLY, chdir, path, close, getuid, getcwd, listdir, getenv, remove, devnull
+from os import chroot, fchdir, O_RDONLY, chdir, path, close, getuid, getcwd, listdir, getenv, remove
 from os import open as get
 from shutil import move, copyfile
-from subprocess import check_call, CalledProcessError, check_output
+from subprocess import check_call, CalledProcessError
 from sys import argv, stderr
+from sys import exit as leave
 from getpass import getpass
 from copy import deepcopy
 import json
-import urllib3
 import re
+import urllib3
 import modules
 
 R = "\033[0;31m"
@@ -40,7 +41,12 @@ Y = "\033[1;33m"
 BOLD = "\033[1m"
 RESET = "\033[0m"
 VERSION = "0.0.1-alpha1"
-HELP = "setup.py, Version %s\n\t-h, --help\t\tPrint this help dialog and exit.\n\t-v,--version\t\tPrint current version and exit.\n\nSimply run this program without any arguments and it will handle the rest."
+HELP = """setup.py, Version %s
+\t-d, --debug\t\tUse debugging mode to see errors and other output
+\t-h, --help\t\tPrint this help dialog and exit.
+\t-v,--version\t\tPrint current version and exit.
+
+Simply run this program without any arguments and it will handle the rest."""
 
 def __mount__(device):
     """Mount device at path
@@ -51,9 +57,9 @@ def __mount__(device):
     try:
         check_call(["mount", "-t", "auto", "-o", "loop", device, "/mnt"],
                    stdout=devnull, stderr=devnull)
-    except CalledProcessError as e:
+    except CalledProcessError as error:
         eprint(R + BOLD + "COULD NOT MOUNT " + device + RESET)
-        eprint(e)
+        eprint(error)
 
 def __chroot_mount__(device, path_dir, fstype="", options=""):
     """Mount necessary psudeo-filesystems"""
@@ -91,17 +97,19 @@ def arch_chroot(path_dir):
     if path_dir[len(path_dir) - 1] == "/":
         path_dir = path_dir[0:len(path_dir) - 2]
     __chroot_mount__("proc", path_dir + "/proc", "proc", "nosuid,noexec,nodev")
-    __chroot_mount__("sys", path_dir + "/sys", "sysfs", "nosuid,noexec,nodev,ro")
+    __chroot_mount__("sys", path_dir + "/sys", "sysfs",
+                     "nosuid,noexec,nodev,ro")
     if path.exists(path_dir + "/sys/firmware/efi/efivars"):
         __chroot_mount__("efivars", path_dir + "/sys/firmware/efi/efivars",
-                  "efivarfs", "nosuid,noexec,nodev")
+                         "efivarfs", "nosuid,noexec,nodev")
     __chroot_mount__("udev", path_dir + "/dev", "devtmpfs", "mode=0755,nosuid")
     __chroot_mount__("devpts", path_dir + "/dev/pts",
-              "devpts", "mode=0620,gid=5,nosuid,noexec")
-    __chroot_mount__("shm", path_dir + "/dev/shm", "tmpfs", "nosuid,noexec,nodev")
+                     "devpts", "mode=0620,gid=5,nosuid,noexec")
+    __chroot_mount__("shm", path_dir + "/dev/shm", "tmpfs",
+                     "nosuid,noexec,nodev")
     __chroot_mount__("/run", path_dir + "/run")
     __chroot_mount__("tmp", path_dir + "/tmp", "tmpfs",
-              "mode=1777,strictatime,nodev,nosuid")
+                     "mode=1777,strictatime,nodev,nosuid")
     chdir(path_dir)
     chroot(path_dir)
     return real_root
@@ -135,8 +143,7 @@ def has_special_character(input_string):
     regex = re.compile(r'[@_!#$%^&*()<>?/\|}{~:]')
     if regex.search(input_string) is None:
         return False
-    else:
-        return True
+    return True
 
 def hasspace(input_string):
     """Check for spaces"""
@@ -221,10 +228,7 @@ def get_updates():
     print(G + BOLD + "UPDATE SETTINGS" + RESET)
     print("------")
     updates = input("Do you want to make install updates in the IMG file (if you are on an AMD64 computer, select 'no')? [Y/n]: ").lower()
-    if updates in ("y", "yes"):
-        return True
-    else:
-        return False
+    return bool(updates in ("y", "yes"))
 
 
 def get_autologin():
@@ -232,10 +236,7 @@ def get_autologin():
     print(G + BOLD + "AUTOLOGIN SETTINGS" + RESET)
     print("------")
     autologin = input("Do you want to enable autologin? [Y/n]: ").lower()
-    if autologin in ("y", "yes"):
-        return True
-    else:
-        return False
+    return bool(autologin in ("y", "yes"))
 
 def get_lang():
     """Get language settings"""
@@ -245,7 +246,7 @@ def get_lang():
     print("------")
     answer = input("Would you like the IMG file to use the same lanaguage as this computer? [Y/n]: ").lower()
     if answer in ("yes", "y"):
-        return(getenv("LANG"))
+        return getenv("LANG")
     print("Parsing language options . . .")
     with open("/etc/locale.gen", "r") as locale_file:
         data = locale_file.read()
@@ -266,8 +267,8 @@ def get_lang():
         locales = deepcopy(data)
         while True:
             print("Which locale is yours?")
-            for each in range(len(locales)):
-                print("[%s] %s" % (each, locales[each]))
+            for each in enumerate(locales):
+                print("[%s] %s" % (each[0], locales[each[0]]))
             answer = input("Locale number or name (or 'filter' to filter): ")
             if answer.lower() == "filter":
                 answer = input("Search term: ")
@@ -298,8 +299,9 @@ def get_lang():
 
 def get_keyboard():
     """Get keyboard settings"""
-    print(G + BOLD + "KEYBOARD SETTINGS" + RESET)
-    print("------")
+    # print(G + BOLD + "KEYBOARD SETTINGS" + RESET)
+    # print("------")
+    return ("Do not configure keyboard; keep kernel keymap", "", "")
 
 
 def get_time_zone():
@@ -311,11 +313,11 @@ def get_time_zone():
     while True:
         print(G + "REGION" + RESET)
         zones = ["Africa", "America", "Antarctica", "Arctic", "Asia",
-                    "Atlantic", "Australia", "Brazil", "Canada", "Chile",
-                    "Europe", "Indian", "Mexico", "Pacific", "US"]
+                 "Atlantic", "Australia", "Brazil", "Canada", "Chile",
+                 "Europe", "Indian", "Mexico", "Pacific", "US"]
         print("Which region is yours?")
-        for each in range(len(zones)):
-            print("[%s] %s" % (each, zones[each]))
+        for each in enumerate(zones):
+            print("[%s] %s" % (each[0], zones[each[0]]))
         answer = input("Region number or name: ")
         try:
             region = zones[int(answer)]
@@ -336,8 +338,8 @@ def get_time_zone():
         zones = sorted(listdir("/usr/share/zoneinfo/" + region))
         while True:
             print("Which subregion is yours?")
-            for each in range(len(zones)):
-                print("[%s] %s" % (each, zones[each]))
+            for each in enumerate(zones):
+                print("[%s] %s" % (each[0], zones[each[0]]))
             answer = input("Region number or name (or 'filter' to filter): ")
             if answer.lower() == "filter":
                 answer = input("Search term: ")
@@ -365,7 +367,7 @@ def get_time_zone():
                 eprint(R + "Not a valid subregion. Please try again." + RESET)
             else:
                 break
-    return(region + "/" + subregion)
+    return region + "/" + subregion
 
 
 def setup(config):
@@ -391,9 +393,9 @@ def setup(config):
     settings["LANG"] = get_lang()
     print("")
     keyboard = get_keyboard()
-    # settings["MODEL"] = keyboard[0]
-    # settings["LAYOUT"] = keyboard[1]
-    # settings["VARIANT"] = keyboard[2]
+    settings["MODEL"] = keyboard[0]
+    settings["LAYOUT"] = keyboard[1]
+    settings["VARIANT"] = keyboard[2]
     print("")
     print(G + BOLD + "IMG FILE LOCATION" + RESET)
     print("------")
@@ -403,13 +405,14 @@ def setup(config):
             location = path.expanduser(location)
         if path.isfile(location):
             break
-        else:
-            eprint(R + BOLD + "NOT A VALID FILE PATH TO IMG FILE" + RESET)
+        eprint(R + BOLD + "NOT A VALID FILE PATH TO IMG FILE" + RESET)
     print("")
+    settings["FILE_DESC"] = devnull
     configuration_procedure(settings, location)
 
 
 def configuration_procedure(settings, location):
+    """Perform the actual IMG configuration"""
     __update__(2)
     __mount__(location)
     __update__(6)
@@ -487,14 +490,14 @@ def configuration_procedure(settings, location):
     except KeyError:
         settings["MODEL"] = "Do not configure keyboard; keep kernel keymap"
     try:
-        if settings["LAYOUT"] in ("", None):
+        if ((settings["LAYOUT"] in ("", None)) and (settings["MODEL"] != "Do not configure keyboard; keep kernel keymap")):
             print("\r")
             eprint("KEYBOARD LAYOUT is not set, defaulting to English (US)")
             settings["LAYOUT"] = "English (US)"
     except KeyError:
         settings["LAYOUT"] = "English (US)"
     try:
-        if settings["VARIENT"] in ("", None):
+        if ((settings["VARIENT"] in ("", None)) and (settings["MODEL"] != "Do not configure keyboard; keep kernel keymap")):
             print("\r")
             eprint("KEYBOARD VARIENT is not set, defaulting to English (US)")
             settings["VARIENT"] = "English (US)"
@@ -529,6 +532,23 @@ def eprint(*args, **kwargs):
     """Make it easier for us to print to stderr"""
     print(*args, file=stderr, **kwargs)
 
+def run():
+    """Do the thing"""
+    if getuid() != 0:
+        print("setup_img.py is not running as root. Would you like to exit now, or elevate to root here?")
+        choice = input("exit or elevate: ").lower()
+        if choice == "elevate":
+            argv.insert(0, "sudo")
+            leave(check_call(argv))
+        else:
+            print("Exiting . . .")
+            leave(0)
+    try:
+        config = download_config()
+    except:
+        eprint("Your internet is either slow or non-existant. Internet is necessary for setup. Please try again later.")
+        leave(2)
+    setup(config)
 
 if __name__ == '__main__':
     if len(argv) > 1:
@@ -536,19 +556,9 @@ if __name__ == '__main__':
             print(HELP)
         elif argv[1] in ("-v", "--version"):
             print(VERSION)
+        elif argv[1] in ("-d", "--debug"):
+            from subprocess import PIPE as devnull
+            run()
     else:
-        internet = check_internet()
-        if getuid() != 0:
-            print("setup_img.py is not running as root. Would you like to exit now, or elevate to root here?")
-            choice = input("exit or elevate: ").lower()
-            if choice == "elevate":
-                exit(check_call(["sudo", argv[0]]))
-            else:
-                print("Exiting . . .")
-                exit(0)
-        try:
-            config = download_config()
-        except:
-            eprint("Your internet is either slow or non-existant. Internet is necessary for setup. Please try again later.")
-            exit(2)
-        setup(config)
+        from subprocess import DEVNULL as devnull
+        run()

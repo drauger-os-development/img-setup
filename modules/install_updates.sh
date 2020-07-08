@@ -23,8 +23,16 @@
 #
 set -e
 set -o pipefail
-apt update 2>/dev/null 1>>/tmp/system-installer.log
-apt -y dist-upgrade 2>/dev/null 1>>/tmp/system-installer.log
-apt -y autoremove 2>/dev/null 1>>/tmp/system-installer.log
-apt clean 2>/dev/null 1>>/tmp/system-installer.log
+output="$1"
+if [ "$output" == "" ]; then
+	apt update 2>/dev/null 1>/dev/null
+	apt -y dist-upgrade 2>/dev/null 1>/dev/null
+	apt -y autoremove 2>/dev/null 1>/dev/null
+	apt clean 2>/dev/null 1>/dev/null
+else
+	apt update
+	apt -y dist-upgrade
+	apt -y autoremove
+	apt clean
+fi
 set +e

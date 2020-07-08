@@ -70,13 +70,13 @@ class MainInstallation():
                     __update__(percent)
                     percent = percent + growth
 
-    def time_set(TIME_ZONE):
+    def time_set(TIME_ZONE, FILE_DESC):
         """Set system time"""
-        set_time.set_time(TIME_ZONE)
+        set_time.set_time(TIME_ZONE, FILE_DESC)
 
-    def locale_set(LANG):
+    def locale_set(LANG, FILE_DESC):
         """Set system locale"""
-        set_locale.set_locale(LANG)
+        set_locale.set_locale(LANG, FILE_DESC)
 
     def set_networking(COMPUTER_NAME):
         """Set system hostname"""
@@ -93,43 +93,43 @@ class MainInstallation():
         with open("/etc/hosts", "w+") as hosts:
             hosts.write("127.0.0.1 %s" % (COMPUTER_NAME))
 
-    def make_user(USERNAME, PASSWORD):
+    def make_user(USERNAME, PASSWORD, FILE_DESC):
         """Set up main user"""
         # This needs to be set up in Python. Leave it in shell for now
         try:
-            check_call(["/make_user.sh", USERNAME, PASSWORD], stdout=devnull,
-                  stderr=devnull)
+            check_call(["/make_user.sh", USERNAME, PASSWORD], stdout=FILE_DESC,
+                  stderr=FILE_DESC)
         except PermissionError:
             chmod("/make_user.sh", 0o777)
-            check_call(["/make_user.sh", USERNAME, PASSWORD], stdout=devnull,
-                       stderr=devnull)
+            check_call(["/make_user.sh", USERNAME, PASSWORD], stdout=FILE_DESC,
+                       stderr=FILE_DESC)
 
-    def __install_updates__(UPDATES, INTERNET):
+    def __install_updates__(UPDATES, INTERNET, FILE_DESC):
         """Install updates"""
         if ((UPDATES) and (INTERNET)):
             try:
-                check_call("/install_updates.sh", stdout=devnull,
-                           stderr=devnull)
+                check_call(["/install_updates.sh"], stdout=FILE_DESC,
+                           stderr=FILE_DESC)
             except PermissionError:
                 chmod("/install_updates.sh", 0o777)
-                check_call("/install_updates.sh", stdout=devnull,
-                           stderr=devnull)
+                check_call(["/install_updates.sh"], stdout=FILE_DESC,
+                           stderr=FILE_DESC)
 
-    def apt(UPDATES, INTERNET):
+    def apt(UPDATES, INTERNET, FILE_DESC):
         """Run commands for apt sequentially to avoid front-end lock"""
-        MainInstallation.__install_updates__(UPDATES, INTERNET)
+        MainInstallation.__install_updates__(UPDATES, INTERNET, FILE_DESC)
 
-    def set_passwd(PASSWORD):
+    def set_passwd(PASSWORD, FILE_DESC):
         """Set Root password"""
-        process = check_call("chpasswd", stdout=devnull, stdin=PIPE,
-                             stderr=devnull)
+        process = Popen("chpasswd", stdout=FILE_DESC, stdin=PIPE,
+                             stderr=FILE_DESC)
         process.communicate(input=bytes(r"root:%s" % (PASSWORD), "utf-8"))
 
     def lightdm_config(LOGIN, USERNAME):
         """Set autologin setting for lightdm"""
         auto_login_set.auto_login_set(LOGIN, USERNAME)
 
-    def set_keyboard(MODEL, LAYOUT, VARIENT):
+    def set_keyboard(MODEL, LAYOUT, VARIENT, FILE_DESC):
         """Set keyboard model, layout, and varient"""
         with open("/usr/share/X11/xkb/rules/base.lst", "r") as xkb_conf:
             kcd = xkb_conf.read()
@@ -147,9 +147,15 @@ class MainInstallation():
             if " ".join(each1[1:]) == MODEL:
                 xkbm = each1[0]
             elif " ".join(each1[1:]) == LAYOUT:
-                xkbl = each1[0]
+                try:
+                    xkbl = each1[0]
+                except IndexError:
+                    xkb1 = each1
             elif " ".join(each1[1:]) == VARIENT:
-                xkbv = each1[0]
+                try:
+                    xkbv = each1[0]
+                except IndexError:
+                    xkbv = each1
         with open("/etc/default/keyboard", "w+") as xkb_default:
             xkb_default.write("""XKBMODEL=\"%s\"
 XKBLAYOUT=\"%s\"
@@ -159,64 +165,67 @@ XKBOPTIONS=\"\"
 BACKSPACE=\"guess\"
 """ % (xkbm, xkbl, xkbv))
         check_call(["udevadm", "trigger", "--subsystem-match=input",
-               "--action=change"], stdout=devnull, stderr=devnull)
+               "--action=change"], stdout=FILE_DESC, stderr=FILE_DESC)
 
-def set_plymouth_theme():
+def set_plymouth_theme(FILE_DESC):
     """Ensure the plymouth theme is set correctly"""
-    check_calln(["update-alternatives", "--install",
+    check_call(["update-alternatives", "--install",
            "/usr/share/plymouth/themes/default.plymouth",
            "default.plymouth",
            "/usr/share/plymouth/themes/drauger-theme/drauger-theme.plymouth",
            "100", "--slave",
            "/usr/share/plymouth/themes/default.grub", "default.plymouth.grub",
            "/usr/share/plymouth/themes/drauger-theme/drauger-theme.grub"],
-          stdout=devnull, stderr=devnull)
-    process = check_call(["update-alternatives", "--config",
-                     "default.plymouth"], stdout=devnull, stdin=PIPE,
-                    stderr=devnull)
+          stdout=FILE_DESC, stderr=FILE_DESC)
+    process = Popen(["update-alternatives", "--config",
+                     "default.plymouth"], stdout=FILE_DESC, stdin=PIPE,
+                    stderr=FILE_DESC)
     process.communicate(input=bytes("2\n", "utf-8"))
 
 
-def _install_bootloader_package(package):
+def _install_bootloader_package(package, FILE_DESC):
     """Install bootloader package
 
     Package should be the package name of the bootloader
     """
-    check_call(["apt", "install", package], stdout=devnull, stderr=devnull)
+    check_call(["apt", "install", package], stdout=FILE_DESC, stderr=FILE_DESC)
 
 
-def install_bootloader(bootloader):
+def install_bootloader(bootloader, FILE_DESC):
     """Determine whether bootloader needs to be systemd-boot (for UEFI) or GRUB (for BIOS)
     and install the correct one.
     """
     if "grub" in bootloader:
-        _install_bootloader_package(bootloader)
-        _install_grub()
+        _install_bootloader_package(bootloader, FILE_DESC)
+        _install_grub(FILE_DESC)
     elif bootloader in ("u-boot-rockchip", "u-boot-rpi", "u-boot-tegra"):
-        _install_bootloader_package(bootloader)
+        _install_bootloader_package(bootloader, FILE_DESC)
 
 
-def _install_grub():
+def _install_grub(FILE_DESC):
     """set up and install GRUB.
     This function is only retained for BIOS systems.
     """
-    check_call(["grub-mkdevicemap", "--verbose"], stdout=devnull,
-               stderr=devnull)
+    check_call(["grub-mkdevicemap", "--verbose"], stdout=FILE_DESC,
+               stderr=FILE_DESC)
     check_call(["grub-mkconfig", "-o", "/boot/grub/grub.cfg"],
-               stdout=devnull, stderr=devnull)
+               stdout=FILE_DESC, stderr=FILE_DESC)
     check_call(["grub-mkstandalone", "--verbose", "--force",
                 "--format=arm64-efi", "--output=/boot/efi/bootx64.efi"],
-               stdout=devnull, stderr=devnull)
+               stdout=FILE_DESC, stderr=FILE_DESC)
 
 
-def setup_lowlevel(bootloader):
+def setup_lowlevel(bootloader, FILE_DESC):
     """Set up kernel and bootloader"""
     release = check_output(["uname", "--release"]).decode()[0:-1]
-    set_plymouth_theme()
+    set_plymouth_theme(FILE_DESC)
+    __update__(90.0)
     check_call(["mkinitramfs", "-o", "/boot/initrd.img-" + release],
-               stdout=devnull, stderr=devnull)
-    install_bootloader(bootloader)
+               stdout=FILE_DESC, stderr=FILE_DESC)
+    __update__(95.0)
+    install_bootloader(bootloader, FILE_DESC)
     sleep(0.5)
+    __update__(97.0)
     try:
         symlink("/boot/initrd.img-" + release, "/boot/initrd.img")
     except FileExistsError:
@@ -225,6 +234,8 @@ def setup_lowlevel(bootloader):
         symlink("/boot/vmlinuz-" + release, "/boot/vmlinuz")
     except FileExistsError:
         pass
+    __update__(100)
+    print("")
 
 
 def make_num(string):
@@ -241,7 +252,7 @@ def install(settings, internet):
         if processes_to_do[each][0] == "_":
             del processes_to_do[each]
     MainInstallation(processes_to_do, settings)
-    setup_lowlevel(settings["bootloader package"])
+    setup_lowlevel(settings["bootloader package"], settings["FILE_DESC"])
 
 if __name__ == "__main__":
     # get length of argv

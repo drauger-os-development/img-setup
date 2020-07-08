@@ -31,11 +31,7 @@ def eprint(*args, **kwargs):
     """Make it easier for us to print to stderr"""
     print(*args, file=stderr, **kwargs)
 
-def set_locale(lang_set):
-    """Figure out locale code for a given language name"""
-    _setlocale(lang_set)
-
-def _setlocale(locale):
+def set_locale(locale, output):
     """Handle setting locale for a given locale code"""
     # Edit /etc/locale.gen
     with open("/etc/locale.gen", "r") as gen_file:
@@ -49,9 +45,9 @@ def _setlocale(locale):
     contents = "\n".join(contents)
     with open("/etc/locale.gen", "w+") as new_gen:
         new_gen.write(contents)
-    check_call(["locale-gen"], stdout=devnull, stderr=devnull)
+    check_call(["locale-gen"], stdout=output, stderr=output)
     check_call(["update-locale", "LANG=%s" % (locale), "LANGUAGE"],
-               stdout=devnull, stderr=devnull)
+               stdout=output, stderr=output)
 
 
 if __name__ == '__main__':

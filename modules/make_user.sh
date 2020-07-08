@@ -23,18 +23,36 @@
 #
 USERNAME="$1"
 PASSWORD="$2"
-{
-	#change live user to $USERNAME
-	usermod -l "$USERNAME" live 1>&2
-	groupmod -n "$USERNAME" live 1>&2
-	#change refrences from old home to new
-	sed -i "s:/home/live:/home/$USERNAME:g" /home/live/.config/gtk-3.0/bookmarks 1>&2
-	#rename home directory
-	mv /home/live /home/"$USERNAME" 1>&2
-	sed -i "s/live/$USERNAME/g" /etc/passwd  1>&2
-} || {
-	useradd --create-home --system --shell /bin/bash --groups adm,cdrom,sudo,audio,dip,plugdev,lpadmin "$USERNAME"
-}
-#change password
-builtin echo "$USERNAME:$PASSWORD" | chpasswd
+output="$3"
+if [ "$output" == "" ]; then
+	{
+		#change live user to $USERNAME
+		usermod -l "$USERNAME" live 2>/dev/null 1>/dev/null
+		groupmod -n "$USERNAME" live 2>/dev/null 1>/dev/null
+		#change refrences from old home to new
+		sed -i "s:/home/live:/home/$USERNAME:g" /home/live/.config/gtk-3.0/bookmarks 2>/dev/null 1>/dev/null
+		#rename home directory
+		mv /home/live /home/"$USERNAME" 2>/dev/null 1>/dev/null
+		sed -i "s/live/$USERNAME/g" /etc/passwd  2>/dev/null 1>/dev/null
+	} || {
+		useradd --create-home --system --shell /bin/bash --groups adm,cdrom,sudo,audio,dip,plugdev,lpadmin "$USERNAME" 2>/dev/null 1>/dev/null
+	}
+	#change password
+	builtin echo "$USERNAME:$PASSWORD" | chpasswd 2>/dev/null 1>/dev/null
+else
+	{
+		#change live user to $USERNAME
+		usermod -l "$USERNAME" live
+		groupmod -n "$USERNAME" live
+		#change refrences from old home to new
+		sed -i "s:/home/live:/home/$USERNAME:g" /home/live/.config/gtk-3.0/bookmarks
+		#rename home directory
+		mv /home/live /home/"$USERNAME"
+		sed -i "s/live/$USERNAME/g" /etc/passwd
+	} || {
+		useradd --create-home --system --shell /bin/bash --groups adm,cdrom,sudo,audio,dip,plugdev,lpadmin "$USERNAME"
+	}
+	#change password
+	builtin echo "$USERNAME:$PASSWORD" | chpasswd
+fi
 

@@ -22,7 +22,7 @@
 #
 #
 """Set system time"""
-from os import symlink, remove, devnull
+from os import symlink, remove
 from sys import stderr, argv
 from subprocess import check_call, CalledProcessError
 
@@ -32,7 +32,7 @@ def eprint(*args, **kwargs):
     print(*args, file=stderr, **kwargs)
 
 
-def _link(location):
+def set_time(location, output):
     """Set time zone and localtime. Also, enable NTP sync."""
     remove("/etc/localtime")
     symlink("/usr/share/zoneinfo/%s" % (location), "/etc/localtime")
@@ -40,18 +40,10 @@ def _link(location):
     with open("/etc/timezone", "w+") as timezone:
         timezone.write(location)
     try:
-        check_call(["timedatectl", "set-ntp", "true"], stdout=devnull,
-                   stderr=devnull)
+        check_call(["timedatectl", "set-ntp", "true"], stdout=output,
+                   stderr=output)
     except CalledProcessError:
         pass
-
-
-
-def set_time(time_zone):
-    """Set time zone and hardware clock"""
-    _link(time_zone)
-    # removed setting hardware clock because this function is supposed to be
-    # run on a seperate machine from what the IMG file will be installed to
 
 
 if __name__ == '__main__':

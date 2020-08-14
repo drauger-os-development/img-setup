@@ -71,7 +71,8 @@ def __chroot_mount__(device, path_dir, fstype="", options=""):
             pass
     else:
         try:
-            check_call(["mount", device, path_dir, "-t", fstype, "-o", options],
+            check_call(["mount", device, path_dir, "-t",
+                        fstype, "-o", options],
                        stdout=devnull, stderr=devnull)
         except CalledProcessError:
             pass
@@ -227,7 +228,7 @@ def get_updates():
     """get whether the user wants install updates or not"""
     print(G + BOLD + "UPDATE SETTINGS" + RESET)
     print("------")
-    updates = input("Do you want to make install updates in the IMG file (if you are on an AMD64 computer, select 'no')? [Y/n]: ").lower()
+    updates = input("Do you want to make install updates in the IMG file (if you ARE NOT on an ARM64 computer, select 'no')? [Y/n]: ").lower()
     return bool(updates in ("y", "yes"))
 
 
@@ -311,7 +312,7 @@ def get_time_zone():
     print(G + BOLD + "TIME SETTINGS" + RESET)
     print("------")
     while True:
-        print(G + "REGION" + RESET)
+        print("\n" + G + "REGION" + RESET)
         zones = ["Africa", "America", "Antarctica", "Arctic", "Asia",
                  "Atlantic", "Australia", "Brazil", "Canada", "Chile",
                  "Europe", "Indian", "Mexico", "Pacific", "US"]
@@ -334,7 +335,7 @@ def get_time_zone():
             else:
                 break
     while True:
-        print(G + "SUBREGION" + RESET)
+        print("\n" + G + "SUBREGION" + RESET)
         zones = sorted(listdir("/usr/share/zoneinfo/" + region))
         while True:
             print("Which subregion is yours?")
@@ -413,6 +414,7 @@ def setup(config):
 
 def configuration_procedure(settings, location):
     """Perform the actual IMG configuration"""
+    print(Y + "WORKING. PLEASE BE PATIENT, THIS MAY TAKE A LITTLE..." + RESET)
     __update__(2)
     __mount__(location)
     __update__(6)
